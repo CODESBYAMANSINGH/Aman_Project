@@ -35,47 +35,32 @@
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
-
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
-
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-
     --primary: 210 40% 98%;
     --primary-foreground: 222.2 47.4% 11.2%;
-
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
-
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
-
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
@@ -96,49 +81,6 @@
   }
 
   body {
-    @apply bg-[#0a0e27] text-white;
+    @apply bg-gray-50 text-gray-900;
   }
 }
-
-@layer utilities {
-  .text-gradient {
-    @apply bg-gradient-to-r from-[#667eea] via-[#764ba2] to-[#f093fb] bg-clip-text text-transparent;
-  }
-}
-
-@keyframes twinkle {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 1; }
-}
-
-@keyframes pulse {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); }
-  50% { transform: translate(-50%, -50%) scale(1.1); }
-}
-
-@keyframes orbit-1 {
-  from { transform: rotate(0deg) translateX(75px) rotate(0deg); }
-  to { transform: rotate(360deg) translateX(75px) rotate(-360deg); }
-}
-
-@keyframes orbit-2 {
-  from { transform: rotate(0deg) translateX(125px) rotate(0deg); }
-  to { transform: rotate(360deg) translateX(125px) rotate(-360deg); }
-}
-
-@keyframes orbit-3 {
-  from { transform: rotate(0deg) translateX(175px) rotate(0deg); }
-  to { transform: rotate(360deg) translateX(175px) rotate(-360deg); }
-}
-
-@keyframes orbit-4 {
-  from { transform: rotate(0deg) translateX(225px) rotate(0deg); }
-  to { transform: rotate(360deg) translateX(225px) rotate(-360deg); }
-}
-
-.animate-twinkle { animation: twinkle 3s infinite; }
-.animate-pulse { animation: pulse 4s infinite; }
-.animate-orbit-1 { animation: orbit-1 10s linear infinite; }
-.animate-orbit-2 { animation: orbit-2 20s linear infinite; }
-.animate-orbit-3 { animation: orbit-3 30s linear infinite; }
-.animate-orbit-4 { animation: orbit-4 40s linear infinite; }
