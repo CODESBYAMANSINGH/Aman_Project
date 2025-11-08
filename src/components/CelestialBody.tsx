@@ -1,32 +1,31 @@
 import { motion } from "framer-motion";
 
-// Variants for the outer glow effect
-const glowVariants = {
+// Variants for the sun image, using drop-shadow for a masked glow
+const sunVariants = {
   day: {
-    boxShadow:
-      "0 0 60px 15px #fff, 0 0 100px 30px #ffc72c, 0 0 180px 50px #f09819",
+    opacity: 1,
+    filter:
+      "brightness(1.1) saturate(1.2) drop-shadow(0 0 30px #fff) drop-shadow(0 0 50px #ffc72c)",
+    scale: 1,
   },
   evening: {
-    boxShadow:
-      "0 0 60px 15px #ffccbc, 0 0 100px 30px #ff9f80, 0 0 180px 50px #ef6c00",
+    opacity: 1,
+    filter:
+      "sepia(0.5) hue-rotate(-30deg) saturate(1.5) brightness(0.9) drop-shadow(0 0 30px #ffccbc) drop-shadow(0 0 50px #ff9f80)",
+    scale: 1.05,
   },
-  night: {
-    boxShadow: "0 0 50px 15px #e0e0e0, 0 0 80px 25px #bdbdbd",
-  },
-};
-
-// Variants for the sun image, using CSS filters for the evening effect
-const sunVariants = {
-  day: { opacity: 1, filter: "brightness(1.1) saturate(1.2)", scale: 1 },
-  evening: { opacity: 1, filter: "sepia(0.5) hue-rotate(-30deg) saturate(1.5) brightness(0.9)", scale: 1.05 },
   night: { opacity: 0, scale: 1.05 },
 };
 
-// Variants for the moon image
+// Variants for the moon image, also with a drop-shadow glow
 const moonVariants = {
   day: { opacity: 0 },
   evening: { opacity: 0 },
-  night: { opacity: 1 },
+  night: {
+    opacity: 1,
+    filter:
+      "brightness(1.1) drop-shadow(0 0 25px #e0e0e0) drop-shadow(0 0 40px #bdbdbd)",
+  },
 };
 
 // Variants for the atmospheric haze/reflection
@@ -43,30 +42,29 @@ const CelestialBody = ({
 }) => {
   return (
     <motion.div
-      className="absolute top-16 right-16 w-32 h-32 rounded-full"
-      variants={glowVariants}
-      animate={timeOfDay}
+      className="absolute top-16 right-16 w-32 h-32"
       transition={{ duration: 5, ease: "easeInOut" }}
     >
       {/* Sun Image */}
       <motion.img
         src="/sun.png"
         alt="Sun"
-        className="absolute inset-0 w-full h-full object-cover"
+        className="absolute inset-0 w-full h-full object-cover rounded-full"
         variants={sunVariants}
         animate={timeOfDay}
         transition={{ duration: 5, ease: "easeInOut" }}
         style={{ willChange: "filter, opacity" }}
       />
-      
+
       {/* Moon Image */}
       <motion.img
         src="/moon.webp"
         alt="Moon"
-        className="absolute inset-0 w-full h-full object-cover"
+        className="absolute inset-0 w-full h-full object-cover rounded-full"
         variants={moonVariants}
         animate={timeOfDay}
-        transition={{ duration: 2, ease: "easeInOut", delay: 2 }} // Moon fades in a bit later during the night transition
+        transition={{ duration: 2, ease: "easeInOut", delay: 2 }}
+        style={{ willChange: "filter, opacity" }}
       />
 
       {/* Slow rotation animation */}
