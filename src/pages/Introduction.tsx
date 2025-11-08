@@ -24,8 +24,18 @@ const Introduction = () => {
       </motion.h2>
       
       <motion.div variants={itemVariants} className="max-w-4xl text-center text-lg text-foreground/80 space-y-4">
-        <p>As India's urban centers expand, so does the demand for sustainable energy. Solar photovoltaic (PV) systems present a viable solution, but their efficiency is highly dependent on installation parameters, particularly the tilt angle of the panels.</p>
-        <p>This project addresses the critical need for optimizing solar energy generation in urban residential settings. We aim to determine the ideal monthly, seasonal, and yearly fixed-tilt angles for PV panels across India's diverse climatic zones to maximize energy capture and ensure a higher return on investment for sustainable urban development.</p>
+        <p>Our project aims to optimize the solar panel setup for high energy efficiency in High-Income Group (HIG) houses, focusing on Energy Efficiency, Urban Applicability, and Sustainability.</p>
+        <p>Solar radiation varies by location and is influenced by factors like latitude and climate. Understanding these variations is crucial for optimizing solar energy systems. Using the ASHRAE model, we can calculate direct, diffuse, and reflected solar radiation, which is vital for designing effective solar installations.</p>
+      </motion.div>
+
+      <motion.div variants={itemVariants} className="mt-12 text-center p-6 bg-card/50 backdrop-blur-sm rounded-lg border border-primary/20">
+        <h3 className="font-semibold text-foreground">Project By: Department of Mechanical Engineering, NIT Raipur</h3>
+        <div className="flex justify-center gap-4 md:gap-8 flex-wrap mt-2">
+          <span className="text-sm text-muted-foreground">Aditya Dudhe - 21119008</span>
+          <span className="text-sm text-muted-foreground">Arikathota Karthik - 21119023</span>
+          <span className="text-sm text-muted-foreground">Abhishek Kumar Roy - 21119006</span>
+        </div>
+        <p className="text-sm text-muted-foreground mt-4">Guided by: Dr. A. K. Tiwari</p>
       </motion.div>
     </motion.div>
   );

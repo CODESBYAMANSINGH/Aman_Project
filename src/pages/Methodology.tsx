@@ -11,11 +11,11 @@ const itemVariants = {
 };
 
 const steps = [
-    { title: "Data Collection", description: "Gathered monthly average daily solar radiation data on a horizontal surface for cities representing each of India's five climatic zones." },
-    { title: "ASHRAE Model Implementation", description: "Employed the isotropic sky model from ASHRAE to calculate the total solar radiation on a tilted surface, considering beam, diffuse, and reflected components." },
-    { title: "Declination Angle Calculation", description: "Calculated the solar declination angle (δ) for the average day of each month using standard astronomical formulas." },
-    { title: "Optimization Algorithm", description: "Developed a computational script to iterate through tilt angles from 0° to 90° for each month, identifying the angle that maximizes the calculated total solar radiation." },
-    { title: "Analysis and Recommendation", description: "Analyzed the results to determine the optimal tilt for each month, and aggregated this data to propose optimal seasonal and yearly fixed-tilt angles." },
+    { title: "Literature Review", description: "Conduct a comprehensive review of existing studies on solar radiation, tilt angles, and installation area optimization." },
+    { title: "Data Collection", description: "Gather climatic data, solar radiation levels, and geographical information for different zones in India." },
+    { title: "Tilt Angle Calculation", description: "Use coding and the ASHRAE model to compute optimal tilt angles for solar panels based on solar radiation data." },
+    { title: "Installation Area Calculation", description: "Develop and apply a code-based approach to determine the optimal installation area for maximizing solar energy generation." },
+    { title: "Model Validation", description: "Validate the calculated tilt angles using simulations and compare them with existing models for accuracy." },
 ];
 
 const Methodology = () => {

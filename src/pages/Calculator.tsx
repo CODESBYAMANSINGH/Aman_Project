@@ -48,13 +48,13 @@ const CalculatorPage = () => {
 
     let seasonalAdjustment;
     if (monthNum >= 3 && monthNum <= 5) {
-      seasonalAdjustment = "Spring: Reduce tilt by 15° from annual optimal";
+      seasonalAdjustment = "Spring/Summer: Reduce tilt by ~15° from annual optimal";
     } else if (monthNum >= 6 && monthNum <= 8) {
-      seasonalAdjustment = "Summer: Reduce tilt by 15° from annual optimal";
+      seasonalAdjustment = "Summer/Monsoon: Reduce tilt by ~15° from annual optimal";
     } else if (monthNum >= 9 && monthNum <= 11) {
       seasonalAdjustment = "Autumn: Use annual optimal tilt";
     } else {
-      seasonalAdjustment = "Winter: Increase tilt by 15° from annual optimal";
+      seasonalAdjustment = "Winter: Increase tilt by ~15° from annual optimal";
     }
 
     const zoneFactors: { [key: string]: number } = {
@@ -65,10 +65,10 @@ const CalculatorPage = () => {
     const tiltCorrectionFactor = 1.12;
     const estimatedIrradiance = (baseIrradiance * tiltCorrectionFactor).toFixed(2);
 
-    const panelArea = 1.6;
+    const panelArea = 1.6; // Average area of a residential solar panel
     const maxPanels = Math.floor(areaNum / panelArea);
-    const panelWattage = 300;
-    const systemEfficiency = 0.75;
+    const panelWattage = 330; // Average wattage
+    const systemEfficiency = 0.75; // Includes inverter, wiring, and other losses
     const annualEnergy = ((maxPanels * panelWattage * baseIrradiance * 365 * systemEfficiency) / 1000).toFixed(0);
 
     setResults({
@@ -76,7 +76,7 @@ const CalculatorPage = () => {
       annualTilt: Math.round(annualTilt).toString(),
       seasonalAdj: seasonalAdjustment,
       irradiance: estimatedIrradiance,
-      panelConfig: `${maxPanels} panels × ${panelWattage}W = ${(maxPanels * panelWattage / 1000).toFixed(1)} kW system`,
+      panelConfig: `${maxPanels} panels × ${panelWattage}W ≈ ${(maxPanels * panelWattage / 1000).toFixed(1)} kW system`,
       energyGen: annualEnergy,
     });
   };
@@ -92,7 +92,7 @@ const CalculatorPage = () => {
       <Card className="w-full max-w-5xl bg-card/80 backdrop-blur-sm border-primary/20 shadow-2xl">
         <CardHeader>
           <CardTitle className="text-3xl font-bold text-center text-primary">
-            Solar Panel Tilt Angle Calculator
+            Solar Optimization Calculator
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -117,11 +117,11 @@ const CalculatorPage = () => {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="area">Available Installation Area (sq. meters)</Label>
+                <Label htmlFor="area">Available Rooftop Area (sq. meters)</Label>
                 <Input id="area" type="number" value={area} onChange={(e) => setArea(e.target.value === '' ? '' : parseFloat(e.target.value))} required placeholder="e.g., 50" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="month">Month of Analysis</Label>
+                <Label htmlFor="month">Month for Analysis</Label>
                 <Select value={month} onValueChange={setMonth} required>
                   <SelectTrigger id="month"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -135,27 +135,34 @@ const CalculatorPage = () => {
                 </Select>
               </div>
               <Button type="submit" className="w-full text-lg bg-primary hover:bg-primary/90 text-primary-foreground">
-                <CalculatorIcon className="mr-2 h-5 w-5" /> Calculate Optimal Angle
+                <CalculatorIcon className="mr-2 h-5 w-5" /> Calculate
               </Button>
             </motion.div>
             <motion.div variants={itemVariants}>
               <div className="p-6 bg-muted/50 rounded-lg h-full">
-                <h3 className="text-xl font-semibold mb-4 text-foreground">Calculation Results</h3>
+                <h3 className="text-xl font-semibold mb-4 text-foreground">Optimization Results</h3>
                 {results ? (
                   <div className="space-y-3">
-                    {[
-                      { label: "Optimal Tilt Angle", value: `${results.tiltAngle}°` },
-                      { label: "Annual Optimal Tilt", value: `${results.annualTilt}°` },
-                      { label: "Seasonal Adjustment", value: results.seasonalAdj },
-                      { label: "Estimated Solar Irradiance", value: `${results.irradiance} kWh/m²/day` },
-                      { label: "Recommended Panel Configuration", value: results.panelConfig },
-                      { label: "Estimated Annual Energy Generation", value: `${results.energyGen} kWh/year` },
-                    ].map(item => (
-                      <div key={item.label} className="p-3 bg-card rounded-md shadow-sm text-sm">
-                        <p className="text-muted-foreground">{item.label}</p>
-                        <p className="font-bold text-primary text-base">{item.value}</p>
-                      </div>
-                    ))}
+                    <div className="p-3 bg-card rounded-md shadow-sm">
+                      <p className="text-muted-foreground">Optimal Tilt for Selected Month</p>
+                      <p className="font-bold text-primary text-2xl">{results.tiltAngle}°</p>
+                    </div>
+                    <div className="p-3 bg-card rounded-md shadow-sm">
+                      <p className="text-muted-foreground">Annual Fixed-Tilt Recommendation</p>
+                      <p className="font-bold text-primary text-lg">{results.annualTilt}°</p>
+                    </div>
+                    <div className="p-3 bg-card rounded-md shadow-sm">
+                      <p className="text-muted-foreground">Seasonal Adjustment Strategy</p>
+                      <p className="font-bold text-primary text-base">{results.seasonalAdj}</p>
+                    </div>
+                    <div className="p-3 bg-card rounded-md shadow-sm">
+                      <p className="text-muted-foreground">Potential System Configuration</p>
+                      <p className="font-bold text-primary text-base">{results.panelConfig}</p>
+                    </div>
+                    <div className="p-3 bg-card rounded-md shadow-sm">
+                      <p className="text-muted-foreground">Estimated Annual Energy Generation</p>
+                      <p className="font-bold text-primary text-lg">{results.energyGen} kWh/year</p>
+                    </div>
                   </div>
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground">
