@@ -48,7 +48,7 @@ const TeamPage = () => {
         <Card className="bg-black/20 backdrop-blur-sm border-white/20 text-white text-center w-72">
           <CardHeader>
             <div className="flex justify-center">
-              <Avatar className="w-24 h-24 border-4 border-yellow-300">
+              <Avatar className="w-32 h-32 border-4 border-yellow-300">
                 <AvatarImage src={mentor.image} alt={mentor.name} />
                 <AvatarFallback>{mentor.name.charAt(0)}</AvatarFallback>
               </Avatar>
@@ -67,18 +67,9 @@ const TeamPage = () => {
       >
         {teamMembers.map((member) => (
           <motion.div key={member.name} variants={itemVariants}>
-            <Card className="bg-black/20 backdrop-blur-sm border-white/20 text-white text-center">
-              <CardHeader>
-                <div className="flex justify-center">
-                  <Avatar className="w-20 h-20 border-2 border-white/50">
-                    <AvatarFallback>{member.name.split(" ").map(n => n[0]).join("")}</AvatarFallback>
-                  </Avatar>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CardTitle className="text-lg">{member.name}</CardTitle>
-                <p className="text-white/80">{member.roll}</p>
-              </CardContent>
+            <Card className="bg-black/20 backdrop-blur-sm border-white/20 text-white text-center p-6">
+              <CardTitle className="text-lg">{member.name}</CardTitle>
+              <p className="text-white/80 mt-1">{member.roll}</p>
             </Card>
           </motion.div>
         ))}
