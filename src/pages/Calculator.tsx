@@ -1,11 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Calculator as CalculatorIcon, Sun, Thermometer, Snowflake } from "lucide-react";
+import { Calculator as CalculatorIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 
 const containerVariants = {
   hidden: { opacity: 0, scale: 0.95 },
@@ -17,48 +17,69 @@ const itemVariants = {
   visible: { y: 0, opacity: 1 },
 };
 
-// Average day of the year for each month
-const monthData = [
-  { name: "January", n: 17 }, { name: "February", n: 47 }, { name: "March", n: 75 },
-  { name: "April", n: 105 }, { name: "May", n: 135 }, { name: "June", n: 162 },
-  { name: "July", n: 198 }, { name: "August", n: 228 }, { name: "September", n: 258 },
-  { name: "October", n: 288 }, { name: "November", n: 318 }, { name: "December", n: 344 },
-];
-
-const calculateDeclination = (n: number) => {
-  return 23.45 * Math.sin((Math.PI / 180) * (360 / 365) * (284 + n));
+type ResultsState = {
+  tiltAngle: string;
+  annualTilt: string;
+  seasonalAdj: string;
+  irradiance: string;
+  panelConfig: string;
+  energyGen: string;
 };
 
 const CalculatorPage = () => {
-  const [latitude, setLatitude] = useState(28.7); // Default to Delhi
-  const [selectedMonth, setSelectedMonth] = useState("July");
-  const [results, setResults] = useState<Record<string, string | number> | null>(null);
+  const [latitude, setLatitude] = useState<number | "">("");
+  const [climaticZone, setClimaticZone] = useState("");
+  const [area, setArea] = useState<number | "">("");
+  const [month, setMonth] = useState("1");
+  const [results, setResults] = useState<ResultsState | null>(null);
 
-  const handleCalculate = () => {
-    const month = monthData.find(m => m.name === selectedMonth);
-    if (!month) return;
+  const handleCalculate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (latitude === "" || area === "" || !climaticZone) return;
 
-    const declination = calculateDeclination(month.n);
-    const optimalTilt = latitude - declination;
+    const latNum = Number(latitude);
+    const areaNum = Number(area);
+    const monthNum = parseInt(month);
+
+    const dayOfYear = (monthNum - 1) * 30.5 + 15;
+    const declination = 23.45 * Math.sin(((360 / 365) * (dayOfYear - 81) * Math.PI) / 180);
+    const monthlyTilt = latNum - declination;
+    const annualTilt = latNum;
+
+    let seasonalAdjustment;
+    if (monthNum >= 3 && monthNum <= 5) {
+      seasonalAdjustment = "Spring: Reduce tilt by 15° from annual optimal";
+    } else if (monthNum >= 6 && monthNum <= 8) {
+      seasonalAdjustment = "Summer: Reduce tilt by 15° from annual optimal";
+    } else if (monthNum >= 9 && monthNum <= 11) {
+      seasonalAdjustment = "Autumn: Use annual optimal tilt";
+    } else {
+      seasonalAdjustment = "Winter: Increase tilt by 15° from annual optimal";
+    }
+
+    const zoneFactors: { [key: string]: number } = {
+      'hot-dry': 6.5, 'warm-humid': 5.2, 'moderate': 5.8,
+      'cold-sunny': 6.0, 'cold-cloudy': 4.5, 'composite': 5.5
+    };
+    const baseIrradiance = zoneFactors[climaticZone] || 5.5;
+    const tiltCorrectionFactor = 1.12;
+    const estimatedIrradiance = (baseIrradiance * tiltCorrectionFactor).toFixed(2);
+
+    const panelArea = 1.6;
+    const maxPanels = Math.floor(areaNum / panelArea);
+    const panelWattage = 300;
+    const systemEfficiency = 0.75;
+    const annualEnergy = ((maxPanels * panelWattage * baseIrradiance * 365 * systemEfficiency) / 1000).toFixed(0);
 
     setResults({
-      "Selected Latitude (L)": latitude.toFixed(2),
-      "Solar Declination (δ)": declination.toFixed(2),
-      "Optimal Monthly Tilt (β)": optimalTilt.toFixed(2),
-      "Yearly Fixed Tilt (≈ L)": latitude.toFixed(2),
-      "Optimal Summer Tilt (L - 15°)": (latitude - 15).toFixed(2),
-      "Optimal Winter Tilt (L + 15°)": (latitude + 15).toFixed(2),
+      tiltAngle: Math.round(monthlyTilt).toString(),
+      annualTilt: Math.round(annualTilt).toString(),
+      seasonalAdj: seasonalAdjustment,
+      irradiance: estimatedIrradiance,
+      panelConfig: `${maxPanels} panels × ${panelWattage}W = ${(maxPanels * panelWattage / 1000).toFixed(1)} kW system`,
+      energyGen: annualEnergy,
     });
   };
-
-  const resultCards = useMemo(() => {
-    if (!results) return null;
-    return [
-      { icon: <Sun className="text-accent" />, title: "Optimal for " + selectedMonth, value: `${results["Optimal Monthly Tilt (β)"]}°` },
-      { icon: <Thermometer className="text-red-500" />, title: "Optimal Summer Tilt", value: `${results["Optimal Summer Tilt (L - 15°)"]}°` },
-      { icon: <Snowflake className="text-blue-500" />, title: "Optimal Winter Tilt", value: `${results["Optimal Winter Tilt (L + 15°)"]}°` },
-    ];
-  }, [results, selectedMonth]);
 
   return (
     <motion.div
@@ -74,56 +95,76 @@ const CalculatorPage = () => {
             Solar Panel Tilt Angle Calculator
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid md:grid-cols-2 gap-8">
-          <motion.div variants={itemVariants} className="space-y-6 p-4">
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <Label htmlFor="latitude">Site Latitude (degrees)</Label>
-                <span className="font-bold text-primary text-lg">{latitude.toFixed(1)}°</span>
+        <CardContent>
+          <form onSubmit={handleCalculate} className="grid md:grid-cols-2 gap-8">
+            <motion.div variants={itemVariants} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="latitude">Latitude (degrees)</Label>
+                <Input id="latitude" type="number" value={latitude} onChange={(e) => setLatitude(e.target.value === '' ? '' : parseFloat(e.target.value))} required placeholder="e.g., 21.25 for Raipur" />
               </div>
-              <Slider id="latitude" min={-90} max={90} step={0.1} value={[latitude]} onValueChange={(val) => setLatitude(val[0])} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="month">Month</Label>
-              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger id="month">
-                  <SelectValue placeholder="Select a month" />
-                </SelectTrigger>
-                <SelectContent>
-                  {monthData.map(m => <SelectItem key={m.name} value={m.name}>{m.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button onClick={handleCalculate} className="w-full text-lg bg-primary hover:bg-primary/90 text-primary-foreground">
-              <CalculatorIcon className="mr-2 h-5 w-5" /> Calculate Optimal Angle
-            </Button>
-          </motion.div>
-          <motion.div variants={itemVariants}>
-            <div className={`p-6 bg-muted/50 rounded-lg h-full transition-all duration-300`}>
-              <h3 className="text-xl font-semibold mb-4 text-foreground">Recommendations</h3>
-              {results ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {resultCards?.map(card => (
-                      <div key={card.title} className="p-4 bg-card rounded-lg text-center shadow">
-                        {card.icon}
-                        <p className="text-sm text-muted-foreground mt-2">{card.title}</p>
-                        <p className="text-2xl font-bold text-primary">{card.value}</p>
+              <div className="space-y-2">
+                <Label htmlFor="climaticZone">Climatic Zone</Label>
+                <Select value={climaticZone} onValueChange={setClimaticZone} required>
+                  <SelectTrigger id="climaticZone"><SelectValue placeholder="Select Zone" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hot-dry">Hot & Dry</SelectItem>
+                    <SelectItem value="warm-humid">Warm & Humid</SelectItem>
+                    <SelectItem value="moderate">Moderate</SelectItem>
+                    <SelectItem value="cold-sunny">Cold & Sunny</SelectItem>
+                    <SelectItem value="cold-cloudy">Cold & Cloudy</SelectItem>
+                    <SelectItem value="composite">Composite</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="area">Available Installation Area (sq. meters)</Label>
+                <Input id="area" type="number" value={area} onChange={(e) => setArea(e.target.value === '' ? '' : parseFloat(e.target.value))} required placeholder="e.g., 50" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="month">Month of Analysis</Label>
+                <Select value={month} onValueChange={setMonth} required>
+                  <SelectTrigger id="month"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">January</SelectItem><SelectItem value="2">February</SelectItem>
+                    <SelectItem value="3">March</SelectItem><SelectItem value="4">April</SelectItem>
+                    <SelectItem value="5">May</SelectItem><SelectItem value="6">June</SelectItem>
+                    <SelectItem value="7">July</SelectItem><SelectItem value="8">August</SelectItem>
+                    <SelectItem value="9">September</SelectItem><SelectItem value="10">October</SelectItem>
+                    <SelectItem value="11">November</SelectItem><SelectItem value="12">December</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button type="submit" className="w-full text-lg bg-primary hover:bg-primary/90 text-primary-foreground">
+                <CalculatorIcon className="mr-2 h-5 w-5" /> Calculate Optimal Angle
+              </Button>
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <div className="p-6 bg-muted/50 rounded-lg h-full">
+                <h3 className="text-xl font-semibold mb-4 text-foreground">Calculation Results</h3>
+                {results ? (
+                  <div className="space-y-3">
+                    {[
+                      { label: "Optimal Tilt Angle", value: `${results.tiltAngle}°` },
+                      { label: "Annual Optimal Tilt", value: `${results.annualTilt}°` },
+                      { label: "Seasonal Adjustment", value: results.seasonalAdj },
+                      { label: "Estimated Solar Irradiance", value: `${results.irradiance} kWh/m²/day` },
+                      { label: "Recommended Panel Configuration", value: results.panelConfig },
+                      { label: "Estimated Annual Energy Generation", value: `${results.energyGen} kWh/year` },
+                    ].map(item => (
+                      <div key={item.label} className="p-3 bg-card rounded-md shadow-sm text-sm">
+                        <p className="text-muted-foreground">{item.label}</p>
+                        <p className="font-bold text-primary text-base">{item.value}</p>
                       </div>
                     ))}
                   </div>
-                  <div className="p-4 bg-card rounded-lg shadow">
-                    <h4 className="font-semibold">Year-Round Performance</h4>
-                    <p className="text-sm text-muted-foreground">For a fixed, non-adjustable setup, a tilt angle of approximately <strong className="text-primary">{results["Yearly Fixed Tilt (≈ L)"]}°</strong> is generally recommended for balanced, year-round energy production at this latitude.</p>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    <p>Enter all values to calculate.</p>
                   </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  <p>Enter site latitude and select a month to begin.</p>
-                </div>
-              )}
-            </div>
-          </motion.div>
+                )}
+              </div>
+            </motion.div>
+          </form>
         </CardContent>
       </Card>
     </motion.div>
