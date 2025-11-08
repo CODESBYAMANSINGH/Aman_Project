@@ -1,13 +1,43 @@
 import { motion } from "framer-motion";
-import { Sun, Moon } from "lucide-react";
-import { useTheme } from "@/components/ThemeProvider";
+import { useState, useEffect } from "react";
+import CelestialBody from "@/components/CelestialBody";
+
+const backgroundVariants = {
+  day: {
+    background: "linear-gradient(to bottom right, #87CEEB, #FFFFFF, #FFD700)",
+  },
+  evening: {
+    background: "linear-gradient(to bottom right, #4682B4, #FF7F50, #B22222)",
+  },
+  night: {
+    background: "linear-gradient(to bottom right, #000080, #191970, #483D8B)",
+  },
+};
+
+const textShadowVariants = {
+  day: { textShadow: "2px 2px 4px rgba(0,0,0,0.3)" },
+  evening: { textShadow: "2px 2px 4px rgba(0,0,0,0.5)" },
+  night: { textShadow: "2px 2px 4px rgba(0,0,0,0.7)" },
+};
 
 const LandingPage = () => {
-  const { theme, setTheme } = useTheme();
+  const [timeOfDay, setTimeOfDay] = useState<"day" | "evening" | "night">(
+    "day",
+  );
 
-  const toggleTheme = () => {
-    setTheme(theme === "light" ? "dark" : "light");
-  };
+  useEffect(() => {
+    const cycle = () => {
+      setTimeOfDay((current) => {
+        if (current === "day") return "evening";
+        if (current === "evening") return "night";
+        return "day";
+      });
+    };
+
+    const intervalId = setInterval(cycle, 8000); // Change every 8 seconds
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   return (
     <motion.div
@@ -17,40 +47,31 @@ const LandingPage = () => {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-sky-200 via-white to-yellow-100 dark:from-slate-900 dark:via-blue-900 dark:to-gray-900 transition-colors duration-700" />
-      
-      <div className="relative z-10">
-        <motion.button
-          onClick={toggleTheme}
-          className="mb-8 p-4 rounded-full bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-lg"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-        >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-          >
-            {theme === "light" ? (
-              <Sun className="text-yellow-500" size={64} />
-            ) : (
-              <Moon className="text-slate-300" size={64} />
-            )}
-          </motion.div>
-        </motion.button>
+      <motion.div
+        className="absolute inset-0"
+        variants={backgroundVariants}
+        animate={timeOfDay}
+        transition={{ duration: 5, ease: "easeInOut" }}
+      />
 
-        <motion.h1 
+      <CelestialBody timeOfDay={timeOfDay} />
+
+      <div className="relative z-10">
+        <motion.h1
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.5 }}
           className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-orange-500 to-yellow-400 dark:from-yellow-400 dark:to-orange-300 text-transparent bg-clip-text"
+          style={{ filter: "drop-shadow(3px 3px 5px rgba(0,0,0,0.3))" }}
         >
           Solar Energy Optimization for Urban Utilization
         </motion.h1>
-        <motion.p 
+        <motion.p
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.5 }}
-          className="mt-4 text-xl md:text-2xl text-gray-600 dark:text-gray-300"
+          className="mt-4 text-xl md:text-2xl text-white/90"
+          variants={textShadowVariants}
         >
           Maximizing Photovoltaic Efficiency in Indian Climatic Zones
         </motion.p>
