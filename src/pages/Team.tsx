@@ -53,7 +53,7 @@ const TeamPage = () => {
       animate="visible"
       exit="hidden"
       variants={containerVariants}
-      className="w-full h-full flex flex-col items-center justify-center"
+      className="w-full h-full flex flex-col items-center justify-center transition-colors duration-[5000ms] ease-in-out"
     >
       <motion.h2
         variants={itemVariants}

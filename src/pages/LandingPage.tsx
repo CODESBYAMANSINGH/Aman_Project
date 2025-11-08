@@ -13,7 +13,7 @@ const LandingPage = () => {
 
   return (
     <motion.div
-      className="w-full min-h-[calc(100vh-14rem)] flex flex-col items-center justify-center text-center p-8"
+      className="w-full min-h-[calc(100vh-14rem)] flex flex-col items-center justify-center text-center p-8 transition-colors duration-[5000ms] ease-in-out"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

@@ -57,7 +57,7 @@ const Methodology = () => {
     : "bg-yellow-500/80 border-yellow-300/50 text-black";
 
   return (
-    <div className="w-full min-h-[calc(100vh-14rem)] flex flex-col items-center justify-center p-8">
+    <div className="w-full min-h-[calc(100vh-14rem)] flex flex-col items-center justify-center p-8 transition-colors duration-[5000ms] ease-in-out">
       <motion.h2
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}

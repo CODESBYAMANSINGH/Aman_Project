@@ -315,7 +315,7 @@ const SolarCalculator = () => {
   };
 
   return (
-    <div className={`min-h-screen ${textColor} p-8`}>
+    <div className={`min-h-screen ${textColor} p-8 transition-colors duration-[5000ms] ease-in-out`}>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12 animate-fade-in">
