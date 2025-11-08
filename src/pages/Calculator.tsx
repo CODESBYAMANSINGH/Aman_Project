@@ -89,7 +89,7 @@ const CalculatorPage = () => {
       animate="visible"
       exit="hidden"
       variants={containerVariants}
-      className="w-full h-full flex items-center justify-center p-4 md:p-8"
+      className="w-full min-h-screen flex items-center justify-center p-4 md:p-8"
     >
       <Card className="w-full max-w-5xl bg-black/30 backdrop-blur-md border-white/20 shadow-2xl text-white">
         <CardHeader>

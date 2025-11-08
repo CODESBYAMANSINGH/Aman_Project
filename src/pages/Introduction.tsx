@@ -27,7 +27,7 @@ const Introduction = () => {
       animate="visible"
       exit="hidden"
       variants={containerVariants}
-      className="w-full h-full overflow-y-auto p-8 pt-32 pb-24 flex flex-col items-center"
+      className="w-full min-h-screen p-8 flex flex-col items-center"
     >
       <div className="max-w-5xl w-full space-y-12">
         <motion.div variants={itemVariants}>

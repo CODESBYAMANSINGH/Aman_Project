@@ -58,9 +58,9 @@ const ProjectLayout = () => {
   const isLastPage = currentPageIndex === pages.length - 1;
 
   return (
-    <div className="relative w-full h-screen overflow-hidden">
+    <div className="relative w-full min-h-screen">
       <motion.div
-        className="absolute inset-0"
+        className="fixed inset-0 -z-10"
         variants={backgroundVariants}
         animate={timeOfDay}
         transition={{ duration: 5, ease: "easeInOut" }}
@@ -68,7 +68,7 @@ const ProjectLayout = () => {
       <CelestialBody timeOfDay={timeOfDay} />
       <Navbar />
       <AnimatePresence mode="wait">
-        <main key={location.pathname} className="w-full h-full relative z-10">
+        <main key={location.pathname} className="w-full relative z-10 pt-32 pb-24">
           <Outlet />
         </main>
       </AnimatePresence>

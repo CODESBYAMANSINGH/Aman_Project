@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 const LandingPage = () => {
   return (
     <motion.div
-      className="w-full h-full flex flex-col items-center justify-center text-center p-8"
+      className="w-full min-h-screen flex flex-col items-center justify-center text-center p-8"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

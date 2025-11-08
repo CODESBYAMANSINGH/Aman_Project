@@ -19,7 +19,7 @@ const itemVariants = {
 const mentor = {
   name: "Dr. A. K. Tiwari",
   image: "/AK-TIWARI.jpg",
-  title: "Professor (HAG)",
+  title: "Project Guide",
 };
 
 const teamMembers = [
@@ -35,7 +35,7 @@ const TeamPage = () => {
       animate="visible"
       exit="hidden"
       variants={containerVariants}
-      className="w-full h-full flex flex-col items-center justify-center p-4 md:p-8"
+      className="w-full min-h-screen flex flex-col items-center justify-center p-4 md:p-8"
     >
       <motion.h2
         variants={itemVariants}

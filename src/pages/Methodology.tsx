@@ -44,7 +44,7 @@ const steps = [
 
 const Methodology = () => {
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center p-8">
+    <div className="w-full min-h-screen flex flex-col items-center justify-center p-8">
       <motion.h2
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
