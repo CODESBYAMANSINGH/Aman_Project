@@ -22,7 +22,7 @@ const objectives = [
 
 const Objectives = () => {
   return (
-    <div className="w-full min-h-screen flex flex-col items-center justify-center p-8">
+    <div className="w-full min-h-[calc(100vh-14rem)] flex flex-col items-center justify-center p-8">
       <motion.h2 initial={{y: -20, opacity: 0}} animate={{y: 0, opacity: 1}} className="text-4xl font-bold text-white mb-12" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
         Project Objectives
       </motion.h2>

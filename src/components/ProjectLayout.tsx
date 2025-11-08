@@ -68,7 +68,7 @@ const ProjectLayout = () => {
       <CelestialBody timeOfDay={timeOfDay} />
       <Navbar />
       <AnimatePresence mode="wait">
-        <main key={location.pathname} className="w-full relative z-10 pt-32 pb-24">
+        <main key={location.pathname} className="w-full relative z-10 pt-28 pb-10">
           <Outlet />
         </main>
       </AnimatePresence>
