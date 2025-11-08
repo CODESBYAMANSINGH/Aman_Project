@@ -7,7 +7,7 @@ const sunContainerVariants = {
   night: {
     opacity: 0,
     scale: 1.05,
-    transition: { duration: 3, ease: "easeInOut" },
+    transition: { duration: 4, ease: "easeInOut" }, // Extended duration for a smoother fade
   },
 };
 
@@ -35,7 +35,7 @@ const moonVariants = {
     opacity: 1,
     filter:
       "brightness(1.1) drop-shadow(0 0 25px #e0e0e0) drop-shadow(0 0 40px #bdbdbd)",
-    transition: { duration: 4, ease: "easeInOut", delay: 1 },
+    transition: { duration: 4, ease: "easeInOut" }, // Removed delay to sync with sun's fade-out
   },
 };
 
@@ -119,7 +119,7 @@ const CelestialBody = ({
           background: `radial-gradient(circle at 50% 50%, transparent 40%, ${
             timeOfDay === "night"
               ? "rgba(200,200,255,0.1)"
-              : "rgba(255,255,200,0.2)"
+                            : "rgba(255,255,200,0.2)"
           } 45%, transparent 55%)`,
         }}
         variants={reflectionVariants}
