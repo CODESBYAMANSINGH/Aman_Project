@@ -96,6 +96,49 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[#0a0e27] text-white;
   }
 }
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-[#667eea] via-[#764ba2] to-[#f093fb] bg-clip-text text-transparent;
+  }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.1); }
+}
+
+@keyframes orbit-1 {
+  from { transform: rotate(0deg) translateX(75px) rotate(0deg); }
+  to { transform: rotate(360deg) translateX(75px) rotate(-360deg); }
+}
+
+@keyframes orbit-2 {
+  from { transform: rotate(0deg) translateX(125px) rotate(0deg); }
+  to { transform: rotate(360deg) translateX(125px) rotate(-360deg); }
+}
+
+@keyframes orbit-3 {
+  from { transform: rotate(0deg) translateX(175px) rotate(0deg); }
+  to { transform: rotate(360deg) translateX(175px) rotate(-360deg); }
+}
+
+@keyframes orbit-4 {
+  from { transform: rotate(0deg) translateX(225px) rotate(0deg); }
+  to { transform: rotate(360deg) translateX(225px) rotate(-360deg); }
+}
+
+.animate-twinkle { animation: twinkle 3s infinite; }
+.animate-pulse { animation: pulse 4s infinite; }
+.animate-orbit-1 { animation: orbit-1 10s linear infinite; }
+.animate-orbit-2 { animation: orbit-2 20s linear infinite; }
+.animate-orbit-3 { animation: orbit-3 30s linear infinite; }
+.animate-orbit-4 { animation: orbit-4 40s linear infinite; }
