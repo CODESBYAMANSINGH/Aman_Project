@@ -127,38 +127,52 @@ const SolarCalculator = () => {
   const calculateOptimalTilt = (lat, day, solarParams) => {
     const delta = solarParams.declination;
     
-    // Daily optimal tilt (ASHRAE approach: latitude - declination)
-    // This makes the panel perpendicular to sun's rays at solar noon
-    const dailyOptimalTilt = lat - delta;
+    // Theoretical daily optimal tilt (latitude - declination)
+    // Makes panel perpendicular to sun's rays at solar noon
+    const theoreticalDailyTilt = lat - delta;
     
     // Annual optimal tilt (approximately equal to latitude)
     const annualTilt = lat;
     
-    // Summer optimization (latitude - 15°)
+    // Summer optimization (latitude - 15°) - Rule of thumb
     const summerTilt = lat - 15;
     
-    // Winter optimization (latitude + 15°)
+    // Winter optimization (latitude + 15°) - Rule of thumb
     const winterTilt = lat + 15;
     
-    // Seasonal adjustment based on day of year
+    // Practical seasonal adjustment based on day of year
+    // Uses rule-of-thumb adjustments for better real-world performance
     let seasonalTilt;
+    let practicalDailyTilt;
+    
     if (day >= 80 && day <= 172) { // Spring (Mar 21 - Jun 21)
-      seasonalTilt = lat - 10;
+      // Transitioning from winter to summer, gradually reduce tilt
+      const springProgress = (day - 80) / (172 - 80); // 0 to 1
+      seasonalTilt = lat - 10 - (springProgress * 5); // Gradually from lat-10 to lat-15
+      practicalDailyTilt = seasonalTilt;
     } else if (day > 172 && day <= 266) { // Summer (Jun 21 - Sep 23)
+      // Full summer: use latitude - 15° (standard summer rule)
       seasonalTilt = summerTilt;
+      practicalDailyTilt = summerTilt;
     } else if (day > 266 && day <= 355) { // Fall (Sep 23 - Dec 21)
-      seasonalTilt = lat - 5;
+      // Transitioning from summer to winter, gradually increase tilt
+      const fallProgress = (day - 266) / (355 - 266); // 0 to 1
+      seasonalTilt = lat - 5 + (fallProgress * 10); // Gradually from lat-5 to lat+5
+      practicalDailyTilt = seasonalTilt;
     } else { // Winter (Dec 21 - Mar 21)
+      // Full winter: use latitude + 15° (standard winter rule)
       seasonalTilt = winterTilt;
+      practicalDailyTilt = winterTilt;
     }
 
     return {
-      daily: Math.max(0, Math.min(90, dailyOptimalTilt)),
+      theoretical: Math.max(0, Math.min(90, theoreticalDailyTilt)),
+      practical: Math.max(5, Math.min(90, practicalDailyTilt)), // Minimum 5° for rain drainage
       annual: Math.max(0, Math.min(90, annualTilt)),
       summer: Math.max(0, Math.min(90, summerTilt)),
       winter: Math.max(0, Math.min(90, winterTilt)),
-      seasonal: Math.max(0, Math.min(90, seasonalTilt)),
-      recommended: Math.max(0, Math.min(90, dailyOptimalTilt)),
+      seasonal: Math.max(5, Math.min(90, seasonalTilt)),
+      recommended: Math.max(5, Math.min(90, practicalDailyTilt)), // Use practical, not theoretical
     };
   };
 
@@ -600,8 +614,12 @@ const SolarCalculator = () => {
                 <h4 className="text-lg font-bold mb-4 text-yellow-400">Tilt Angle Analysis</h4>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className={subTextColor}>Daily Optimal:</span>
+                    <span className={subTextColor}>Recommended (Practical):</span>
                     <span className="font-semibold">{results.tiltAngles.recommended.toFixed(1)}°</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={subTextColor}>Theoretical (φ - δ):</span>
+                    <span className="font-semibold">{results.tiltAngles.theoretical.toFixed(1)}°</span>
                   </div>
                   <div className="flex justify-between">
                     <span className={subTextColor}>Seasonal Approx:</span>
@@ -612,11 +630,11 @@ const SolarCalculator = () => {
                     <span className="font-semibold">{results.tiltAngles.annual.toFixed(1)}°</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className={subTextColor}>Summer (Fixed):</span>
+                    <span className={subTextColor}>Summer Rule:</span>
                     <span className="font-semibold">{results.tiltAngles.summer.toFixed(1)}°</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className={subTextColor}>Winter (Fixed):</span>
+                    <span className={subTextColor}>Winter Rule:</span>
                     <span className="font-semibold">{results.tiltAngles.winter.toFixed(1)}°</span>
                   </div>
                 </div>
