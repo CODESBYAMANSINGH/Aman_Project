@@ -744,19 +744,6 @@ const SolarCalculator = () => {
                 </ul>
               </div>
             </div>
-
-            {/* Footer Info */}
-            <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-6 text-center text-white">
-              <p className="text-lg font-semibold mb-2">
-                🎓 Project by: Aditya Dudhe, Arikathota Karthik, Abhishek Kumar Roy
-              </p>
-              <p className="text-sm text-blue-200">
-                Department of Mechanical Engineering | NIT Raipur | Guided by: Dr. A. K. Tiwari
-              </p>
-              <p className="text-xs text-blue-300 mt-2">
-                Based on ASHRAE Clear Sky Model | Optimized for Indian Climatic Zones
-              </p>
-            </div>
           </div>
         )}
       </div>
