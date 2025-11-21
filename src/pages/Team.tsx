@@ -20,7 +20,7 @@ const itemVariants = {
 };
 
 const mentor = {
-  name: "Dr. A. K. Tiwari Sir",
+  name: "Dr. Anil Kr. Tiwari Sir",
   image: "/AK-TIWARI.jpg",
   title: "Professor (HAG)",
 };
