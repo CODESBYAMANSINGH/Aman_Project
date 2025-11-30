@@ -370,6 +370,28 @@ const SolarCalculator = () => {
     }
   };
 
+  // Data for illustrative graphs
+  const baseEfficiency = 21; // %
+  const tempCoefficient = -0.004; // -0.4% per °C
+  const temperatureData = [];
+  for (let temp = 25; temp <= 75; temp += 5) {
+    const efficiency = baseEfficiency * (1 + (temp - 25) * tempCoefficient);
+    temperatureData.push({
+      temperature: temp,
+      efficiency: parseFloat(efficiency.toFixed(2)),
+    });
+  }
+
+  const dustData = [];
+  const dustLossFactor = 0.03; // 3% loss per dust level unit
+  for (let dustLevel = 0; dustLevel <= 10; dustLevel++) {
+    const powerOutput = 100 * (1 - dustLevel * dustLossFactor);
+    dustData.push({
+      dustLevel: dustLevel,
+      powerOutput: parseFloat(Math.max(0, powerOutput).toFixed(2)),
+    });
+  }
+
   return (
     <div className={`min-h-screen ${textColor} p-8 transition-colors duration-[5000ms] ease-in-out`}>
       <div className="max-w-7xl mx-auto">
@@ -687,6 +709,81 @@ const SolarCalculator = () => {
                   />
                 </LineChart>
               </ResponsiveContainer>
+            </div>
+
+            {/* Performance Factor Graphs */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Temperature Effect */}
+              <div className={`${cardBg} backdrop-blur-lg rounded-2xl p-8 shadow-2xl border ${cardBorder}`}>
+                <h3 className="text-2xl font-bold mb-6">Performance Factor: Temperature</h3>
+                <ResponsiveContainer width="100%" height={400}>
+                  <LineChart data={temperatureData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={isDay ? "#00000030" : "#ffffff30"} />
+                    <XAxis
+                      dataKey="temperature"
+                      stroke={chartStrokeColor}
+                      label={{ value: "Panel Temperature (°C)", position: "insideBottom", offset: -5, fill: chartStrokeColor }}
+                    />
+                    <YAxis
+                      stroke={chartStrokeColor}
+                      domain={['dataMin - 1', 'dataMax + 1']}
+                      label={{ value: "Efficiency (%)", angle: -90, position: "insideLeft", fill: chartStrokeColor }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: isDay ? "#f1f5f9" : "#1e293b",
+                        color: isDay ? "#1e293b" : "#f1f5f9",
+                        border: "none",
+                        borderRadius: "8px",
+                      }}
+                    />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="efficiency"
+                      stroke="#ef4444"
+                      strokeWidth={3}
+                      name="Panel Efficiency"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Dust Effect */}
+              <div className={`${cardBg} backdrop-blur-lg rounded-2xl p-8 shadow-2xl border ${cardBorder}`}>
+                <h3 className="text-2xl font-bold mb-6">Performance Factor: Dust</h3>
+                <ResponsiveContainer width="100%" height={400}>
+                  <LineChart data={dustData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={isDay ? "#00000030" : "#ffffff30"} />
+                    <XAxis
+                      dataKey="dustLevel"
+                      stroke={chartStrokeColor}
+                      label={{ value: "Dust Level (0-10)", position: "insideBottom", offset: -5, fill: chartStrokeColor }}
+                    />
+                    <YAxis
+                      stroke={chartStrokeColor}
+                      domain={[60, 100]}
+                      label={{ value: "Power Output (%)", angle: -90, position: "insideLeft", fill: chartStrokeColor }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: isDay ? "#f1f5f9" : "#1e293b",
+                        color: isDay ? "#1e293b" : "#f1f5f9",
+                        border: "none",
+                        borderRadius: "8px",
+                      }}
+                    />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="powerOutput"
+                      stroke="#a16207"
+                      strokeWidth={3}
+                      name="Relative Power Output"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
 
             {/* Detailed Results */}
