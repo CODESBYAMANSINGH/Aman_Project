@@ -16,6 +16,8 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  BarChart,
+  Bar,
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -33,7 +35,7 @@ const SolarCalculator = () => {
 
   const textColor = isDay ? "text-slate-800" : "text-white";
   const subTextColor = isDay ? "text-slate-600" : "text-blue-200";
-  const cardBg = isDay ? "bg-white/40" : "bg-white/10";
+  const cardBg = isDay ? "bg-white/40" : "bg-black/20";
   const cardBorder = isDay ? "border-slate-300/50" : "border-white/20";
   const inputBg = isDay ? "bg-white/50" : "bg-white/20";
   const inputBorder = isDay ? "border-slate-400/50" : "border-white/30";
@@ -176,16 +178,16 @@ const SolarCalculator = () => {
     };
   };
 
-  const calculatePOA = (tiltAngle, lat, day, solarParams) => {
+  const calculatePOA = (tiltAngle, lat, day, solarParams, omega = 0) => {
     const beta = (tiltAngle * Math.PI) / 180;
     const phi = (lat * Math.PI) / 180;
     const delta = (solarParams.declination * Math.PI) / 180;
+    const omegaRad = (omega * Math.PI) / 180;
     
-    // Incidence angle on tilted surface (south-facing, solar noon)
+    // Incidence angle on tilted surface (south-facing)
     const cosTheta =
-      Math.sin(delta) * Math.sin(phi) * Math.cos(beta) -
-      Math.sin(delta) * Math.cos(phi) * Math.sin(beta) +
-      Math.cos(delta) * Math.cos(phi) * Math.cos(beta);
+      Math.sin(delta) * Math.sin(phi - beta) +
+      Math.cos(delta) * Math.cos(phi - beta) * Math.cos(omegaRad);
     
     // Plane of Array irradiance
     const POA =
@@ -257,7 +259,7 @@ const SolarCalculator = () => {
       
       // Energy calculations
       const peakSunHours = poaIrradiance / 1000; // Convert W/m² to kWh/m²/day
-      const dailyEnergy = systemCapacity * peakSunHours * effectiveEfficiency / panelEfficiency;
+      const dailyEnergy = systemCapacity * peakSunHours * (1 - systemLoss);
       const monthlyEnergy = dailyEnergy * 30;
       const annualEnergy = dailyEnergy * 365;
       
@@ -286,12 +288,55 @@ const SolarCalculator = () => {
         const sp = calculateSolarParameters(latitude, day, altitude);
         const tilt = calculateOptimalTilt(latitude, day, sp);
         const poa = calculatePOA(tilt.seasonal, latitude, day, sp);
-        const energy = ((poa / 1000) * systemCapacity * effectiveEfficiency / panelEfficiency) * 30;
+        const energy = ((poa / 1000) * systemCapacity * (1 - systemLoss)) * 30;
         yearlyData.push({
           month: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][month - 1],
           energy: parseFloat(energy.toFixed(0)),
           tilt: parseFloat(tilt.seasonal.toFixed(1)),
         });
+      }
+
+      // Generate data for hourly energy generation
+      const hourlyEnergyData = [];
+      const sunriseHourAngleDeg = Math.acos(-Math.tan((latitude * Math.PI) / 180) * Math.tan((solarParams.declination * Math.PI) / 180)) * (180 / Math.PI);
+
+      for (let hour = 0; hour < 24; hour++) {
+        const omega = 15 * (hour - 12); // Hour angle in degrees
+
+        if (Math.abs(omega) < sunriseHourAngleDeg) {
+          const omegaRad = (omega * Math.PI) / 180;
+          const phiRad = (latitude * Math.PI) / 180;
+          const deltaRad = (solarParams.declination * Math.PI) / 180;
+
+          const sinAlpha = Math.sin(phiRad) * Math.sin(deltaRad) + Math.cos(phiRad) * Math.cos(deltaRad) * Math.cos(omegaRad);
+
+          if (sinAlpha > 0) {
+            const alphaDeg = Math.asin(sinAlpha) * (180 / Math.PI);
+            const m = 1 / (sinAlpha + 0.50572 * Math.pow(alphaDeg + 6.07995, -1.6364));
+            const tau_b = 0.56 * (Math.exp(-0.65 * m) + Math.exp(-0.095 * m));
+            const DNI = solarParams.Gon * tau_b;
+            const tau_d = 0.271 - 0.294 * tau_b;
+            const DHI = solarParams.Gon * tau_d * sinAlpha;
+
+            const hourlySolarParams = {
+              ...solarParams,
+              DNI: DNI * (1 + (altitude / 1000) * 0.07),
+              DHI: DHI * (1 + (altitude / 1000) * 0.07),
+            };
+
+            const poa = calculatePOA(tiltAngles.recommended, latitude, dayOfYear, hourlySolarParams, omega);
+            const hourlyEnergy = systemCapacity * (poa / 1000) * (1 - systemLoss);
+
+            hourlyEnergyData.push({
+              hour: `${hour}:00`,
+              energy: parseFloat(hourlyEnergy.toFixed(3)),
+            });
+          } else {
+            hourlyEnergyData.push({ hour: `${hour}:00`, energy: 0 });
+          }
+        } else {
+          hourlyEnergyData.push({ hour: `${hour}:00`, energy: 0 });
+        }
       }
 
       setResults({
@@ -313,6 +358,7 @@ const SolarCalculator = () => {
         coalSaved,
         tiltRadiationData,
         yearlyData,
+        hourlyEnergyData,
       });
       
       setShowResults(true);
@@ -557,6 +603,42 @@ const SolarCalculator = () => {
                     dot={{ fill: "#fbbf24", r: 4 }}
                   />
                 </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Hourly Energy Generation */}
+            <div className={`${cardBg} backdrop-blur-lg rounded-2xl p-8 shadow-2xl border ${cardBorder}`}>
+              <h3 className="text-2xl font-bold mb-6">Hourly Energy Generation for {format(date, "do MMMM")}</h3>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={results.hourlyEnergyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDay ? "#00000030" : "#ffffff30"} />
+                  <XAxis
+                    dataKey="hour"
+                    stroke={chartStrokeColor}
+                    label={{ value: "Hour of Day", position: "insideBottom", offset: -5, fill: chartStrokeColor }}
+                    interval={1}
+                  />
+                  <YAxis
+                    stroke={chartStrokeColor}
+                    label={{ value: "Energy (kWh)", angle: -90, position: "insideLeft", fill: chartStrokeColor }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: isDay ? "#f1f5f9" : "#1e293b",
+                      color: isDay ? "#1e293b" : "#f1f5f9",
+                      border: "none",
+                      borderRadius: "8px",
+                    }}
+                    cursor={{fill: isDay ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'}}
+                  />
+                  <Legend />
+                  <Bar
+                    dataKey="energy"
+                    fill="#8884d8"
+                    name="Generated Energy (kWh)"
+                    barSize={20}
+                  />
+                </BarChart>
               </ResponsiveContainer>
             </div>
 
