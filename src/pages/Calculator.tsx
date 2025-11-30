@@ -18,6 +18,7 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  Cell,
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -197,6 +198,55 @@ const SolarCalculator = () => {
     return Math.max(0, POA);
   };
 
+  const getHourlyIrradiance = (lat, day, Gon, omega, altitude) => {
+    const omegaRad = (omega * Math.PI) / 180;
+    const phiRad = (lat * Math.PI) / 180;
+    const deltaRad = (23.45 * Math.sin(((360 * (284 + day)) / 365) * (Math.PI / 180))) * (Math.PI / 180);
+
+    const sinAlpha = Math.sin(phiRad) * Math.sin(deltaRad) + Math.cos(phiRad) * Math.cos(deltaRad) * Math.cos(omegaRad);
+
+    if (sinAlpha <= 0) {
+        return { DNI: 0, DHI: 0, GHI: 0 };
+    }
+
+    const alphaDeg = Math.asin(sinAlpha) * (180 / Math.PI);
+    const m = 1 / (sinAlpha + 0.50572 * Math.pow(alphaDeg + 6.07995, -1.6364));
+    const tau_b = 0.56 * (Math.exp(-0.65 * m) + Math.exp(-0.095 * m));
+    const DNI = Gon * tau_b;
+    const tau_d = 0.271 - 0.294 * tau_b;
+    const DHI = Gon * tau_d * sinAlpha;
+    const GHI = DNI * sinAlpha + DHI;
+
+    const altCorrection = 1 + (altitude / 1000) * 0.07;
+
+    return {
+        DNI: DNI * altCorrection,
+        DHI: DHI * altCorrection,
+        GHI: GHI * altCorrection,
+    };
+  };
+
+  const calculateDirectionalPOA = (azimuthDeg, lat, declinationDeg, DNI, DHI, GHI, omega) => {
+    const beta = 90 * (Math.PI / 180); // Vertical wall, tilt = 90°
+    const gamma = azimuthDeg * (Math.PI / 180); // Surface azimuth
+    const phi = lat * (Math.PI / 180);
+    const delta = declinationDeg * (Math.PI / 180);
+    const omegaRad = omega * (Math.PI / 180);
+
+    // Incidence angle on vertical surface
+    const cosTheta = 
+        -Math.sin(delta) * Math.cos(phi) * Math.cos(gamma) +
+        Math.cos(delta) * Math.sin(phi) * Math.cos(gamma) * Math.cos(omegaRad) +
+        Math.cos(delta) * Math.sin(gamma) * Math.sin(omegaRad);
+
+    const beamComponent = DNI * Math.max(0, cosTheta);
+    const diffuseComponent = DHI * 0.5; // Isotropic sky model for vertical surface
+    const albedo = 0.2; // Typical ground reflectance
+    const reflectedComponent = GHI * albedo * 0.5;
+
+    return beamComponent + diffuseComponent + reflectedComponent;
+  };
+
   const validateInputs = () => {
     setError("");
     
@@ -298,45 +348,39 @@ const SolarCalculator = () => {
 
       // Generate data for hourly energy generation
       const hourlyEnergyData = [];
-      const sunriseHourAngleDeg = Math.acos(-Math.tan((latitude * Math.PI) / 180) * Math.tan((solarParams.declination * Math.PI) / 180)) * (180 / Math.PI);
-
       for (let hour = 0; hour < 24; hour++) {
-        const omega = 15 * (hour - 12); // Hour angle in degrees
-
-        if (Math.abs(omega) < sunriseHourAngleDeg) {
-          const omegaRad = (omega * Math.PI) / 180;
-          const phiRad = (latitude * Math.PI) / 180;
-          const deltaRad = (solarParams.declination * Math.PI) / 180;
-
-          const sinAlpha = Math.sin(phiRad) * Math.sin(deltaRad) + Math.cos(phiRad) * Math.cos(deltaRad) * Math.cos(omegaRad);
-
-          if (sinAlpha > 0) {
-            const alphaDeg = Math.asin(sinAlpha) * (180 / Math.PI);
-            const m = 1 / (sinAlpha + 0.50572 * Math.pow(alphaDeg + 6.07995, -1.6364));
-            const tau_b = 0.56 * (Math.exp(-0.65 * m) + Math.exp(-0.095 * m));
-            const DNI = solarParams.Gon * tau_b;
-            const tau_d = 0.271 - 0.294 * tau_b;
-            const DHI = solarParams.Gon * tau_d * sinAlpha;
-
-            const hourlySolarParams = {
-              ...solarParams,
-              DNI: DNI * (1 + (altitude / 1000) * 0.07),
-              DHI: DHI * (1 + (altitude / 1000) * 0.07),
-            };
-
+        const omega = 15 * (hour - 12);
+        const { DNI, DHI, GHI } = getHourlyIrradiance(latitude, dayOfYear, solarParams.Gon, omega, altitude);
+        if (GHI > 0) {
+            const hourlySolarParams = { ...solarParams, DNI, DHI };
             const poa = calculatePOA(tiltAngles.recommended, latitude, dayOfYear, hourlySolarParams, omega);
             const hourlyEnergy = systemCapacity * (poa / 1000) * (1 - systemLoss);
-
-            hourlyEnergyData.push({
-              hour: `${hour}:00`,
-              energy: parseFloat(hourlyEnergy.toFixed(3)),
-            });
-          } else {
-            hourlyEnergyData.push({ hour: `${hour}:00`, energy: 0 });
-          }
+            hourlyEnergyData.push({ hour: `${hour}:00`, energy: parseFloat(hourlyEnergy.toFixed(3)) });
         } else {
-          hourlyEnergyData.push({ hour: `${hour}:00`, energy: 0 });
+            hourlyEnergyData.push({ hour: `${hour}:00`, energy: 0 });
         }
+      }
+
+      // Generate data for directional wall-mounted comparison
+      const directions = { South: 0, West: 90, East: -90, North: 180 };
+      const directionalEnergyData = [];
+      const declinationDeg = solarParams.declination;
+
+      for (const [direction, azimuth] of Object.entries(directions)) {
+          let totalDailyPOA_Wh_m2 = 0;
+          for (let hour = 0; hour < 24; hour++) {
+              const omega = 15 * (hour - 12);
+              const { DNI, DHI, GHI } = getHourlyIrradiance(latitude, dayOfYear, solarParams.Gon, omega, altitude);
+              if (GHI > 0) {
+                  const poa = calculateDirectionalPOA(azimuth, latitude, declinationDeg, DNI, DHI, GHI, omega);
+                  totalDailyPOA_Wh_m2 += poa; // Summing hourly W/m² gives total Wh/m² for the day
+              }
+          }
+          const dailyEnergyKWh = (totalDailyPOA_Wh_m2 * actualArea * effectiveEfficiency) / 1000;
+          directionalEnergyData.push({
+              direction: direction,
+              energy: parseFloat(dailyEnergyKWh.toFixed(2)),
+          });
       }
 
       setResults({
@@ -359,6 +403,7 @@ const SolarCalculator = () => {
         tiltRadiationData,
         yearlyData,
         hourlyEnergyData,
+        directionalEnergyData,
       });
       
       setShowResults(true);
@@ -391,6 +436,8 @@ const SolarCalculator = () => {
       powerOutput: parseFloat(Math.max(0, powerOutput).toFixed(2)),
     });
   }
+
+  const barColors = ["#fbbf24", "#a855f7", "#3b82f6", "#6b7280"];
 
   return (
     <div className={`min-h-screen ${textColor} p-8 transition-colors duration-[5000ms] ease-in-out`}>
@@ -784,6 +831,38 @@ const SolarCalculator = () => {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
+            </div>
+
+            {/* Directional Comparison */}
+            <div className={`${cardBg} backdrop-blur-lg rounded-2xl p-8 shadow-2xl border ${cardBorder}`}>
+              <h3 className="text-2xl font-bold mb-6">Wall-Mounted Directional Comparison</h3>
+              <p className={`mb-6 ${subTextColor}`}>
+                Estimated daily energy generation for vertically mounted panels on walls facing different directions.
+              </p>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={results.directionalEnergyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDay ? "#00000030" : "#ffffff30"} />
+                  <XAxis dataKey="direction" stroke={chartStrokeColor} />
+                  <YAxis
+                    stroke={chartStrokeColor}
+                    label={{ value: "Daily Energy (kWh)", angle: -90, position: "insideLeft", fill: chartStrokeColor }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: isDay ? "#f1f5f9" : "#1e293b",
+                      color: isDay ? "#1e293b" : "#f1f5f9",
+                      border: "none",
+                      borderRadius: "8px",
+                    }}
+                    cursor={{fill: isDay ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'}}
+                  />
+                  <Bar dataKey="energy" name="Generated Energy (kWh)">
+                    {results.directionalEnergyData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={barColors[index]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
 
             {/* Detailed Results */}
