@@ -674,7 +674,7 @@ const SolarCalculator = () => {
                 </LineChart>
               </ResponsiveContainer>
             </div>
-            
+
             {/* Annual Energy Profile */}
             <div className={`${cardBg} backdrop-blur-lg rounded-2xl p-8 shadow-2xl border ${cardBorder}`}>
               <h3 className="text-2xl font-bold mb-6">Annual Energy Generation Profile</h3>
@@ -825,6 +825,43 @@ const SolarCalculator = () => {
                       <Cell key={`cell-${index}`} fill={barColors[index]} />
                     ))}
                   </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            
+            {/* Hourly Energy Generation */}
+            <div className={`${cardBg} backdrop-blur-lg rounded-2xl p-8 shadow-2xl border ${cardBorder}`}>
+              <h3 className="text-2xl font-bold mb-6">Hourly Energy Generation for {format(date, "do MMMM")}</h3>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={results.hourlyEnergyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDay ? "#00000030" : "#ffffff30"} />
+                  <XAxis
+                    dataKey="hour"
+                    stroke={chartStrokeColor}
+                    label={{ value: "Hour of Day", position: "insideBottom", offset: -5, fill: chartStrokeColor }}
+                    interval={1}
+                  />
+                  <YAxis
+                    stroke={chartStrokeColor}
+                    label={{ value: "Energy (kWh)", angle: -90, position: "insideLeft", fill: chartStrokeColor }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: isDay ? "#f1f5f9" : "#1e293b",
+                      color: isDay ? "#1e293b" : "#f1f5f9",
+                      border: "none",
+                      borderRadius: "8px",
+                    }}
+                    cursor={{fill: isDay ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'}}
+                  />
+                  <Legend />
+                  <Bar
+                    dataKey="energy"
+                    fill="#8884d8"
+                    name="Generated Energy (kWh)"
+                    barSize={20}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
