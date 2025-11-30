@@ -27,6 +27,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { format, startOfYear, differenceInDays } from "date-fns";
 
 const SolarCalculator = () => {
@@ -46,6 +53,7 @@ const SolarCalculator = () => {
   const [date, setDate] = useState(new Date(2024, 5, 21));
   const [isCalculating, setIsCalculating] = useState(false);
   const [error, setError] = useState("");
+  const [hourlyDirection, setHourlyDirection] = useState("optimal");
 
   const [inputs, setInputs] = useState({
     latitude: 21.2514,
@@ -346,41 +354,54 @@ const SolarCalculator = () => {
         });
       }
 
-      // Generate data for hourly energy generation
-      const hourlyEnergyData = [];
+      // Generate data for hourly energy generation by direction
+      const allHourlyDirectionalData = {
+        optimal: [],
+        south: [],
+        west: [],
+        east: [],
+        north: [],
+      };
+      const directions = { South: 0, West: 90, East: -90, North: 180 };
+      const declinationDeg = solarParams.declination;
+
       for (let hour = 0; hour < 24; hour++) {
         const omega = 15 * (hour - 12);
         const { DNI, DHI, GHI } = getHourlyIrradiance(latitude, dayOfYear, solarParams.Gon, omega, altitude);
+        const hourLabel = `${hour}:00`;
+
         if (GHI > 0) {
-            const hourlySolarParams = { ...solarParams, DNI, DHI };
-            const poa = calculatePOA(tiltAngles.recommended, latitude, dayOfYear, hourlySolarParams, omega);
-            const hourlyEnergy = systemCapacity * (poa / 1000) * (1 - systemLoss);
-            hourlyEnergyData.push({ hour: `${hour}:00`, energy: parseFloat(hourlyEnergy.toFixed(3)) });
+          // Optimal Rooftop
+          const hourlySolarParams = { ...solarParams, DNI, DHI };
+          const poaOptimal = calculatePOA(tiltAngles.recommended, latitude, dayOfYear, hourlySolarParams, omega);
+          const energyOptimal = systemCapacity * (poaOptimal / 1000) * (1 - systemLoss);
+          allHourlyDirectionalData.optimal.push({ hour: hourLabel, energy: parseFloat(energyOptimal.toFixed(3)) });
+
+          // Wall-mounted
+          for (const [direction, azimuth] of Object.entries(directions)) {
+            const poaWall = calculateDirectionalPOA(azimuth, latitude, declinationDeg, DNI, DHI, GHI, omega);
+            const energyWallKWh = (poaWall * actualArea * effectiveEfficiency) / 1000;
+            allHourlyDirectionalData[direction.toLowerCase()].push({ hour: hourLabel, energy: parseFloat(energyWallKWh.toFixed(3)) });
+          }
         } else {
-            hourlyEnergyData.push({ hour: `${hour}:00`, energy: 0 });
+          // No sun, zero energy for all
+          allHourlyDirectionalData.optimal.push({ hour: hourLabel, energy: 0 });
+          for (const direction of Object.keys(directions)) {
+            allHourlyDirectionalData[direction.toLowerCase()].push({ hour: hourLabel, energy: 0 });
+          }
         }
       }
 
-      // Generate data for directional wall-mounted comparison
-      const directions = { South: 0, West: 90, East: -90, North: 180 };
-      const directionalEnergyData = [];
-      const declinationDeg = solarParams.declination;
+      const hourlyEnergyData = allHourlyDirectionalData.optimal;
 
-      for (const [direction, azimuth] of Object.entries(directions)) {
-          let totalDailyPOA_Wh_m2 = 0;
-          for (let hour = 0; hour < 24; hour++) {
-              const omega = 15 * (hour - 12);
-              const { DNI, DHI, GHI } = getHourlyIrradiance(latitude, dayOfYear, solarParams.Gon, omega, altitude);
-              if (GHI > 0) {
-                  const poa = calculateDirectionalPOA(azimuth, latitude, declinationDeg, DNI, DHI, GHI, omega);
-                  totalDailyPOA_Wh_m2 += poa; // Summing hourly W/m² gives total Wh/m² for the day
-              }
-          }
-          const dailyEnergyKWh = (totalDailyPOA_Wh_m2 * actualArea * effectiveEfficiency) / 1000;
-          directionalEnergyData.push({
-              direction: direction,
-              energy: parseFloat(dailyEnergyKWh.toFixed(2)),
-          });
+      // Generate data for directional wall-mounted comparison
+      const directionalEnergyData = [];
+      for (const [direction] of Object.entries(directions)) {
+        const totalDailyEnergy = allHourlyDirectionalData[direction.toLowerCase()].reduce((sum, item) => sum + item.energy, 0);
+        directionalEnergyData.push({
+          direction: direction,
+          energy: parseFloat(totalDailyEnergy.toFixed(2)),
+        });
       }
 
       setResults({
@@ -404,6 +425,7 @@ const SolarCalculator = () => {
         yearlyData,
         hourlyEnergyData,
         directionalEnergyData,
+        allHourlyDirectionalData,
       });
       
       setShowResults(true);
@@ -675,6 +697,97 @@ const SolarCalculator = () => {
               </ResponsiveContainer>
             </div>
 
+            {/* Hourly Energy Generation */}
+            <div className={`${cardBg} backdrop-blur-lg rounded-2xl p-8 shadow-2xl border ${cardBorder}`}>
+              <h3 className="text-2xl font-bold mb-6">Hourly Energy Generation (Optimal Rooftop) for {format(date, "do MMMM")}</h3>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={results.hourlyEnergyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDay ? "#00000030" : "#ffffff30"} />
+                  <XAxis
+                    dataKey="hour"
+                    stroke={chartStrokeColor}
+                    label={{ value: "Hour of Day", position: "insideBottom", offset: -5, fill: chartStrokeColor }}
+                    interval={1}
+                  />
+                  <YAxis
+                    stroke={chartStrokeColor}
+                    label={{ value: "Energy (kWh)", angle: -90, position: "insideLeft", fill: chartStrokeColor }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: isDay ? "#f1f5f9" : "#1e293b",
+                      color: isDay ? "#1e293b" : "#f1f5f9",
+                      border: "none",
+                      borderRadius: "8px",
+                    }}
+                    cursor={{fill: isDay ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'}}
+                  />
+                  <Legend />
+                  <Bar
+                    dataKey="energy"
+                    fill="#8884d8"
+                    name="Generated Energy (kWh)"
+                    barSize={20}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Interactive Hourly Generation by Orientation */}
+            <div className={`${cardBg} backdrop-blur-lg rounded-2xl p-8 shadow-2xl border ${cardBorder}`}>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+                <div>
+                  <h3 className="text-2xl font-bold">Hourly Generation by Orientation</h3>
+                  <p className={`mt-1 ${subTextColor}`}>See how panel direction affects generation throughout the day.</p>
+                </div>
+                <Select onValueChange={(value) => setHourlyDirection(value)} defaultValue={hourlyDirection}>
+                  <SelectTrigger className={`w-full sm:w-[200px] mt-4 sm:mt-0 ${inputBg} border ${inputBorder}`}>
+                    <SelectValue placeholder="Select Orientation" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="optimal">Optimal Rooftop</SelectItem>
+                    <SelectItem value="south">South Wall</SelectItem>
+                    <SelectItem value="west">West Wall</SelectItem>
+                    <SelectItem value="east">East Wall</SelectItem>
+                    <SelectItem value="north">North Wall</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <ResponsiveContainer width="100%" height={400}>
+                <LineChart data={results.allHourlyDirectionalData[hourlyDirection]}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDay ? "#00000030" : "#ffffff30"} />
+                  <XAxis
+                    dataKey="hour"
+                    stroke={chartStrokeColor}
+                    label={{ value: "Hour of Day", position: "insideBottom", offset: -5, fill: chartStrokeColor }}
+                    interval={1}
+                  />
+                  <YAxis
+                    stroke={chartStrokeColor}
+                    label={{ value: "Energy (kWh)", angle: -90, position: "insideLeft", fill: chartStrokeColor }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: isDay ? "#f1f5f9" : "#1e293b",
+                      color: isDay ? "#1e293b" : "#f1f5f9",
+                      border: "none",
+                      borderRadius: "8px",
+                    }}
+                    cursor={{ stroke: chartStrokeColor, strokeWidth: 1, strokeDasharray: "3 3" }}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="energy"
+                    stroke="#34d399"
+                    strokeWidth={3}
+                    name="Generated Energy (kWh)"
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
             {/* Annual Energy Profile */}
             <div className={`${cardBg} backdrop-blur-lg rounded-2xl p-8 shadow-2xl border ${cardBorder}`}>
               <h3 className="text-2xl font-bold mb-6">Annual Energy Generation Profile</h3>
@@ -825,43 +938,6 @@ const SolarCalculator = () => {
                       <Cell key={`cell-${index}`} fill={barColors[index]} />
                     ))}
                   </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            
-            {/* Hourly Energy Generation */}
-            <div className={`${cardBg} backdrop-blur-lg rounded-2xl p-8 shadow-2xl border ${cardBorder}`}>
-              <h3 className="text-2xl font-bold mb-6">Hourly Energy Generation for {format(date, "do MMMM")}</h3>
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={results.hourlyEnergyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={isDay ? "#00000030" : "#ffffff30"} />
-                  <XAxis
-                    dataKey="hour"
-                    stroke={chartStrokeColor}
-                    label={{ value: "Hour of Day", position: "insideBottom", offset: -5, fill: chartStrokeColor }}
-                    interval={1}
-                  />
-                  <YAxis
-                    stroke={chartStrokeColor}
-                    label={{ value: "Energy (kWh)", angle: -90, position: "insideLeft", fill: chartStrokeColor }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: isDay ? "#f1f5f9" : "#1e293b",
-                      color: isDay ? "#1e293b" : "#f1f5f9",
-                      border: "none",
-                      borderRadius: "8px",
-                    }}
-                    cursor={{fill: isDay ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'}}
-                  />
-                  <Legend />
-                  <Bar
-                    dataKey="energy"
-                    fill="#8884d8"
-                    name="Generated Energy (kWh)"
-                    barSize={20}
-                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
